@@ -1,6 +1,7 @@
 # Vault
 1. the .sln file for Visual Studio is in libbcrypt (vs2019/libbcrypt).
 2. the code is in test (vs2019/test/main.cpp).
+3. bcrypt library: https://github.com/trusch/libbcrypt.git
 <hr>
 
 1. [ ] a password vault; it stores passwords and usernames and allows copying to clipboard
