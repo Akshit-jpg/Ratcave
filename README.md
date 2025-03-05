@@ -1,7 +1,6 @@
 # Vault
-1. the .sln file for Visual Studio is in libbcrypt within vs2019.
-2. the path for the final build (.exe): ...\vs2019\libbcrypt\x64\Debug
-3. the code is in test (main.cpp).
+1. the .sln file for Visual Studio is in libbcrypt (vs2019/libbcrypt).
+2. the code is in test (vs2019/test/main.cpp).
 <hr>
 
 1. [ ] a password vault; it stores passwords and usernames and allows copying to clipboard
