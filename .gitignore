@@ -1,0 +1,28 @@
+# Ignore Visual Studio generated files
+.vs/
+*.sdf
+*.VC.db
+*.ipch
+*.opensdf
+*.idb
+
+# Ignore build output
+Debug/
+Release/
+x64/
+x86/
+*.obj
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.lib
+*.log
+*.tlog
+
+# Ignore CMake generated files
+CMakeCache.txt
+CMakeFiles/
+
+# Ignore user-specific settings
+*.user
