@@ -5,7 +5,7 @@
 <hr>
 
 1. [ ] a password vault; it stores passwords and usernames and allows copying to clipboard
-2. [ ] a password manager, that prompts to autofill passwords on different platforms
+2. [ ] a password manager, that prompts to autofill passwords on different platforms. it also has a password generator that suggests a strong password on a sign up screen
 3. [ ] syncing the data between different devices, as in having it on the web
 <hr>
 

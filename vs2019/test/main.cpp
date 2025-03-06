@@ -4,6 +4,8 @@
 #include <fstream>
 #include <codecvt>
 #include <locale>
+#include <unordered_map>
+#include <sstream>
 
 // Global variables
 HINSTANCE hInst;
