@@ -4,18 +4,17 @@
 #include <fstream>
 #include <codecvt>
 #include <locale>
-#include <unordered_map>
-#include <sstream>
+#include "json.hpp"
 
 // Global variables
 HINSTANCE hInst;
-HWND hEdit, hButton1, hDropdown1, hDropdown2, hCopybutton, hEdit1, hEdit2, hEdit3, hSubmitbutton;
+HWND hEdit, hButton1, hDropdown1, hDropdown2, hCopybutton, hEdit1, hEdit2, hEdit3, hSubmitbutton,
+hDropdown3, hDropdown4, hDeletebutton, hDropdown5, hDropdown6, hPassword, hUpdatebutton;
 
 int parentWidth;
 int parentHeight;
 int xPos;
 int yPos;
-// std::string hash;
 
 std::string line;
 const char* c = line.c_str();
@@ -246,13 +245,66 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     hInst,
                     NULL);
 
+                HWND hLabel6 = CreateWindow(
+                    "STATIC",             // Window class for static text
+                    "KILL A RAT:\nPlatform",          // Text to display
+                    WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned, no border)
+                    clientRect.left + 20, clientRect.top + 420,  // Position above dropdown
+                    100, 40,              // Width and height
+                    hWnd,
+                    NULL,
+                    hInst,
+                    NULL);
+
+                hDropdown3 = CreateWindow(
+                    "COMBOBOX",
+                    "",
+                    CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_VSCROLL,
+                    clientRect.left + 20, clientRect.top + 460, xPos / 2, 300,
+                    hWnd,
+                    (HMENU)4,
+                    hInst,
+                    NULL);
+
+                HWND hLabel7 = CreateWindow(
+                    "STATIC",             // Window class for static text
+                    "Username:",          // Text to display
+                    WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned)
+                    clientRect.left + 20 + xPos / 2 + 20, clientRect.top + 440,  // Position (above dropdown)
+                    100, 20,              // Width and height
+                    hWnd,
+                    NULL,
+                    hInst,
+                    NULL
+                );
+
+                hDropdown4 = CreateWindow(
+                    "COMBOBOX",
+                    "",
+                    WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
+                    clientRect.left + 20 + xPos / 2 + 20, clientRect.top + 460, xPos / 2, 300,
+                    hWnd,
+                    (HMENU)5,
+                    hInst,
+                    NULL);
+
+                hDeletebutton = CreateWindow(
+                    "BUTTON",
+                    "Delete",
+                    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+                    clientRect.left + 20 + xPos + 20 + 20, clientRect.top + 460, 75, 25,
+                    hWnd,
+                    (HMENU)2,
+                    hInst,
+                    NULL);
+
                 xPos = parentWidth - 175;
 
                 HWND hLabel3 = CreateWindow(
                     "STATIC",             // Window class for static text
                     "ADD A RAT:\nPlatform:",          // Text to display
                     WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned)
-                    clientRect.left + 20, clientRect.top + 360,  // Position (above dropdown)
+                    clientRect.left + 20, clientRect.top + 340,  // Position (above dropdown)
                     100, 40,              // Width and height
                     hWnd,
                     NULL,
@@ -264,7 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     "EDIT",
                     "",
                     WS_CHILD | WS_VISIBLE | WS_BORDER,
-                    clientRect.left + 20, clientRect.top + 400, xPos / 3, 25,
+                    clientRect.left + 20, clientRect.top + 380, xPos / 3, 25,
                     hWnd,
                     NULL,
                     hInst,
@@ -274,7 +326,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     "STATIC",             // Window class for static text
                     "Username:",          // Text to display
                     WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned)
-                    clientRect.left + 20 + xPos / 3 + 20, clientRect.top + 380,  // Position (above dropdown)
+                    clientRect.left + 20 + xPos / 3 + 20, clientRect.top + 360,  // Position (above dropdown)
                     100, 20,              // Width and height
                     hWnd,
                     NULL,
@@ -286,7 +338,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     "EDIT",
                     "",
                     WS_CHILD | WS_VISIBLE | WS_BORDER,
-                    clientRect.left + 20+xPos/3+20, clientRect.top + 400, xPos / 3, 25,
+                    clientRect.left + 20+xPos/3+20, clientRect.top + 380, xPos / 3, 25,
                     hWnd,
                     NULL,
                     hInst,
@@ -296,7 +348,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     "STATIC",             // Window class for static text
                     "Password:",          // Text to display
                     WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned)
-                    clientRect.left + 20 + xPos / 3 + 20 + xPos / 3 + 20, clientRect.top + 380,  // Position (above dropdown)
+                    clientRect.left + 20 + xPos / 3 + 20 + xPos / 3 + 20, clientRect.top + 360,  // Position (above dropdown)
                     100, 20,              // Width and height
                     hWnd,
                     NULL,
@@ -308,7 +360,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     "EDIT",
                     "",
                     WS_CHILD | WS_VISIBLE | WS_BORDER,
-                    clientRect.left + 20 + xPos / 3 + 20+xPos/3+20, clientRect.top + 400, xPos / 3, 25,
+                    clientRect.left + 20 + xPos / 3 + 20+xPos/3+20, clientRect.top + 380, xPos / 3, 25,
                     hWnd,
                     NULL,
                     hInst,
@@ -318,9 +370,84 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     "BUTTON",
                     "Add",
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-                    clientRect.left + 20 + xPos + 20 + 20+20, clientRect.top + 400, 75, 25,
+                    clientRect.left + 20 + xPos + 20 + 20+20, clientRect.top + 380, 75, 25,
                     hWnd, 
                     (HMENU)6,
+                    hInst,
+                    NULL);
+
+                HWND hLabel8 = CreateWindow(
+                    "STATIC",             // Window class for static text
+                    "FIX A RAT:\nPlatform",          // Text to display
+                    WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned, no border)
+                    clientRect.left + 20, clientRect.top + 500,  // Position above dropdown
+                    100, 40,              // Width and height
+                    hWnd,
+                    NULL,
+                    hInst,
+                    NULL);
+
+                hDropdown5 = CreateWindow(
+                    "COMBOBOX",
+                    "",
+                    CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_VSCROLL,
+                    clientRect.left + 20, clientRect.top + 540, xPos / 3, 300,
+                    hWnd,
+                    (HMENU)4,
+                    hInst,
+                    NULL);
+
+                HWND hLabel9 = CreateWindow(
+                    "STATIC",             // Window class for static text
+                    "Username:",          // Text to display
+                    WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned)
+                    clientRect.left + 20 + xPos / 2 + 20, clientRect.top + 520,  // Position (above dropdown)
+                    100, 20,              // Width and height
+                    hWnd,
+                    NULL,
+                    hInst,
+                    NULL
+                );
+
+                hDropdown6 = CreateWindow(
+                    "COMBOBOX",
+                    "",
+                    WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
+                    clientRect.left + 20 + xPos / 3 + 20, clientRect.top + 540, xPos / 3, 300,
+                    hWnd,
+                    (HMENU)5,
+                    hInst,
+                    NULL);
+
+                HWND hLabel10 = CreateWindow(
+                    "STATIC",             // Window class for static text
+                    "New Password:",          // Text to display
+                    WS_CHILD | WS_VISIBLE | SS_LEFT, // Styles (visible, left-aligned)
+                    clientRect.left + 20 + xPos / 3 + 20 + xPos / 3 + 20, clientRect.top + 520,  // Position (above dropdown)
+                    100, 20,              // Width and height
+                    hWnd,
+                    NULL,
+                    hInst,
+                    NULL
+                );
+
+                hPassword = CreateWindow(
+                    "EDIT",
+                    "",
+                    WS_CHILD | WS_VISIBLE | WS_BORDER,
+                    clientRect.left + 20 + xPos / 3 + 20 + xPos / 3 + 20, clientRect.top + 540, xPos / 3, 25,
+                    hWnd,
+                    NULL,
+                    hInst,
+                    NULL);
+
+                hUpdatebutton = CreateWindow(
+                    "BUTTON",
+                    "Update",
+                    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+                    clientRect.left + 20 + xPos + 20 + 20 + 20, clientRect.top + 540, 75, 25,
+                    hWnd,
+                    (HMENU)2,
                     hInst,
                     NULL);
 
