@@ -6,6 +6,8 @@
 #include <locale>
 #include "json.hpp"
 
+using json = nlohmann::json;
+
 // Global variables
 HINSTANCE hInst;
 HWND hEdit, hButton1, hDropdown1, hDropdown2, hCopybutton, hEdit1, hEdit2, hEdit3, hSubmitbutton,
@@ -16,36 +18,98 @@ int parentHeight;
 int xPos;
 int yPos;
 
+char platform[256]; // Adjust size as needed
+char username[256];
+char password[256];
+
 std::string line;
 const char* c = line.c_str();
 
 // Forward declarations
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-// Function to copy text to the clipboard
-void CopyToClipboard(const char* text) {
-    // Open the clipboard
+
+// Function to clear password
+void secureClear(void* ptr, size_t size) {
+    volatile unsigned char* p = (volatile unsigned char*)ptr;
+    while (size--) *p++ = 0;
+}
+
+    // Function to copy text to the clipboard
+void CopyToClipboard(const std::string& text) {
     if (OpenClipboard(NULL)) {
-        // Empty the clipboard before setting new data 
         EmptyClipboard();
 
-        // Allocate global memory for the text to be copied
-        HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, strlen(text) + 1);
+        // Allocate global memory for the text
+        HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, text.size() + 1);
         if (hGlobal) {
-            // Lock the global memory to get a pointer to the data
-            char* pText = (char*)GlobalLock(hGlobal);
+            // Lock the memory and copy the text
+            char* pText = static_cast<char*>(GlobalLock(hGlobal));
             if (pText) {
-                // Copy the text to the allocated memory
-                strcpy_s(pText, strlen(text) + 1, text);  // +1 for the null-terminator
+                strcpy_s(pText, text.size() + 1, text.c_str());  // Copy string to memory
+                GlobalUnlock(hGlobal);
 
-                // Set the clipboard data with the allocated global memory
+                // Set clipboard data
                 SetClipboardData(CF_TEXT, hGlobal);
             }
-            GlobalUnlock(hGlobal);
         }
 
-        // Close the clipboard
         CloseClipboard();
+    }
+}
+
+
+void getPlatform(HWND hComboBox) {
+    std::ifstream inFile("vault.json");
+    if (!inFile) {
+        MessageBox(NULL, "Failed to open vault.json", "Error", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    if (inFile.peek() == std::ifstream::traits_type::eof()) {
+        EnableWindow(hComboBox, FALSE);  // Disable dropdown if empty
+        return;
+    }
+    else {
+        json jsonObj = json::parse(inFile);  // Read the JSON
+        inFile.close();
+
+        // Clear existing items in the ComboBox
+        SendMessage(hComboBox, CB_RESETCONTENT, 0, 0);
+
+        // Iterate through JSON object and add keys (platforms) to the ComboBox
+        for (auto it = jsonObj.begin(); it != jsonObj.end(); ++it) {
+            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)it.key().c_str());
+        }
+    }
+}
+
+void getUsername(HWND hComboBox,const std::string& selectedPlatform) {
+    std::ifstream inFile("vault.json");
+    if (!inFile) {
+        MessageBox(NULL, "Failed to open vault.json", "Error", MB_OK | MB_ICONERROR);
+        EnableWindow(hComboBox, FALSE);
+        return;
+    }
+
+    if (inFile.peek() == std::ifstream::traits_type::eof()) {
+        EnableWindow(hComboBox, FALSE);  // Disable dropdown if empty
+        return;
+    }
+    else {
+        json jsonObj = json::parse(inFile);
+        inFile.close();
+
+        SendMessage(hComboBox, CB_RESETCONTENT, 0, 0);
+
+        if (jsonObj[selectedPlatform].empty()) {
+            EnableWindow(hComboBox, FALSE);
+        }
+        else {
+            for (auto it = jsonObj[selectedPlatform].begin(); it != jsonObj[selectedPlatform].end(); ++it) {
+                SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)it.key().c_str());
+            }
+        }
     }
 }
 
@@ -177,7 +241,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 MessageBox(hWnd, "You've been ratted.", "Incorrect Password", MB_OK | MB_ICONERROR); // Unicode strings for message box
             }
             else {
-
                 // Maximize the window and disable minimize & resize options
                 ShowWindow(hWnd, SW_MAXIMIZE);
                 LONG_PTR style = GetWindowLongPtr(hWnd, GWL_STYLE);
@@ -209,7 +272,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_VSCROLL,
                     clientRect.left+20, clientRect.top+100, xPos/2, 300,
                     hWnd,
-                    (HMENU)4,
+                    (HMENU)2,
                     hInst,
                     NULL);
 
@@ -231,7 +294,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
                     clientRect.left + 20+xPos/2+20, clientRect.top + 100, xPos/2, 300,
                     hWnd,
-                    (HMENU)5,
+                    (HMENU)3,
                     hInst,
                     NULL);
 
@@ -241,7 +304,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                     clientRect.left + 20 + xPos + 20+20, clientRect.top + 100, 75, 25,
                     hWnd,
-                    (HMENU)2,
+                    (HMENU)4,
                     hInst,
                     NULL);
 
@@ -262,7 +325,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_VSCROLL,
                     clientRect.left + 20, clientRect.top + 460, xPos / 2, 300,
                     hWnd,
-                    (HMENU)4,
+                    (HMENU)5,
                     hInst,
                     NULL);
 
@@ -284,7 +347,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
                     clientRect.left + 20 + xPos / 2 + 20, clientRect.top + 460, xPos / 2, 300,
                     hWnd,
-                    (HMENU)5,
+                    (HMENU)6,
                     hInst,
                     NULL);
 
@@ -294,7 +357,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                     clientRect.left + 20 + xPos + 20 + 20, clientRect.top + 460, 75, 25,
                     hWnd,
-                    (HMENU)2,
+                    (HMENU)7,
                     hInst,
                     NULL);
 
@@ -372,7 +435,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                     clientRect.left + 20 + xPos + 20 + 20+20, clientRect.top + 380, 75, 25,
                     hWnd, 
-                    (HMENU)6,
+                    (HMENU)8,
                     hInst,
                     NULL);
 
@@ -393,7 +456,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE | WS_VSCROLL,
                     clientRect.left + 20, clientRect.top + 540, xPos / 3, 200,
                     hWnd,
-                    (HMENU)4,
+                    (HMENU)9,
                     hInst,
                     NULL);
 
@@ -415,7 +478,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
                     clientRect.left + 20 + xPos / 3 + 20, clientRect.top + 540, xPos / 3, 200,
                     hWnd,
-                    (HMENU)5,
+                    (HMENU)10,
                     hInst,
                     NULL);
 
@@ -447,41 +510,143 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                     clientRect.left + 20 + xPos + 20 + 20 + 20, clientRect.top + 540, 75, 25,
                     hWnd,
-                    (HMENU)2,
+                    (HMENU)11,
                     hInst,
                     NULL);
 
-                TCHAR Planets[9][10] =
-                {
-                    TEXT("Mercury"), TEXT("Venus"), TEXT("Terra"), TEXT("Mars"),
-                    TEXT("Jupiter"), TEXT("Saturn"), TEXT("Uranus"), TEXT("Neptune"),
-                    TEXT("Pluto??")
-                };
-
-                TCHAR A[16];
-                int  k = 0;
-
-                memset(&A, 0, sizeof(A));
-                for (k = 0; k <= 8; k += 1)
-                {
-                    strcpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Planets[k]);
-
-                    // Add string to combobox.
-                    SendMessage(hDropdown1, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
-                }
-
-                SendMessage(hDropdown2, CB_ADDSTRING, 0, (LPARAM)"Choice A");
-                SendMessage(hDropdown2, CB_ADDSTRING, 0, (LPARAM)"Choice B");
-                SendMessage(hDropdown2, CB_ADDSTRING, 0, (LPARAM)"Choice C");
+                getPlatform(hDropdown1);
+                EnableWindow(hDropdown2, FALSE);
+                
+                getPlatform(hDropdown3);
+                EnableWindow(hDropdown4, FALSE);
 
                 DestroyWindow(hEdit);  // Destroy the text box
                 DestroyWindow(hButton1); // Destroy the button
             }
         }
 
-        if (LOWORD(wParam) == 2)
+        if (LOWORD(wParam) == 2 && HIWORD(wParam) == CBN_SELCHANGE) {
+            EnableWindow(hDropdown2, TRUE);
+
+            char selectedPlatform[256] = { 0 };
+            int selectedIndex = SendMessage(hDropdown1, CB_GETCURSEL, 0, 0);
+
+            // Retrieve the selected platform name from the dropdown
+            SendMessage(hDropdown1, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedPlatform);
+            selectedPlatform[255] = '\0';  // Null-terminate the string
+
+            std::string platformStr = selectedPlatform;
+            getUsername(hDropdown2, platformStr);
+        }
+
+        if (LOWORD(wParam) == 5 && HIWORD(wParam) == CBN_SELCHANGE) {
+            EnableWindow(hDropdown4, TRUE);
+
+            char selectedPlatform[256] = { 0 };
+            int selectedIndex = SendMessage(hDropdown3, CB_GETCURSEL, 0, 0);
+
+            // Retrieve the selected platform name from the dropdown
+            SendMessage(hDropdown3, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedPlatform);
+            selectedPlatform[255] = '\0';  // Null-terminate the string
+
+            std::string platformStr = selectedPlatform;
+            getUsername(hDropdown4, platformStr);
+        }
+
+        if (LOWORD(wParam) == 4) {
+            char selectedPlatform[256] = { 0 };
+            char selectedUsername[256] = { 0 };
+            int selectedIndex = SendMessage(hDropdown1, CB_GETCURSEL, 0, 0);
+            int selectedIndex1 = SendMessage(hDropdown2, CB_GETCURSEL, 0, 0);
+            SendMessage(hDropdown1, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedPlatform);
+            SendMessage(hDropdown2, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedUsername);
+
+            std::string platformStr = selectedPlatform; // platformStr still has platform
+            std::string usernameStr = selectedUsername; // platformStr still has platform
+
+            std::ifstream innFile("vault.json");
+            if (!innFile) {
+                MessageBox(NULL, "Failed to open vault.json", "Error", MB_OK | MB_ICONERROR);
+            }
+            else {
+                json jsonObjj = json::parse(innFile);  // Read the JSON
+
+                std::string passwordd = jsonObjj[platformStr][usernameStr];
+                CopyToClipboard(passwordd);
+            }
+        }
+
+        if (LOWORD(wParam) == 8)
+        {
+            GetWindowText(hEdit1, platform, sizeof(platform));
+
+            GetWindowText(hEdit2, username, sizeof(username));
+
+            GetWindowText(hEdit3, password, sizeof(password));
+
+            std::ifstream inFile("vault.json");
+
+            json jsonObj;
+            
+            if (inFile.peek() == std::ifstream::traits_type::eof()) {
+                jsonObj = json::object();  // Start with an empty JSON object
+                inFile.close();
+            }
+            else {
+                jsonObj = json::parse(inFile);
+            }
+
+            jsonObj[platform][username] = password;
+
+            std::ofstream outFile("vault.json");
+
+            if (!outFile) {
+                MessageBox(hWnd, "File failed to open!", "Error", MB_OK | MB_ICONERROR);
+            }
+            else {
+                outFile << jsonObj.dump();
+
+                // Close the file
+                outFile.close();
+
+                EnableWindow(hDropdown1, TRUE);
+                getPlatform(hDropdown1);
+                EnableWindow(hDropdown2, FALSE);
+
+                EnableWindow(hDropdown3, TRUE);
+                getPlatform(hDropdown3);
+                EnableWindow(hDropdown4, FALSE);
+            }
+        }
+
+        if (LOWORD(wParam) == 7) {
+            std::ifstream inFile("vault.json");
+            if (inFile.peek() == std::ifstream::traits_type::eof()) {
+                MessageBox(hWnd, "Empty file.", "Error", MB_OK | MB_ICONERROR);
+                inFile.close();
+            }
+            else {
+                json jsonObj = json::parse(inFile);
+            }
+        }
+
+        if (LOWORD(wParam) == 67) {
+            MessageBox(hWnd, "gawk", "Error", MB_OK | MB_ICONERROR);
+        }
+
+        if (LOWORD(wParam) == 23)
         {
             const std::string fileName = "example.txt";
+            std::ifstream inFile(fileName);
+
+            if (inFile) {
+                // File exists, read and print its contents
+                getline(inFile, line);
+                inFile.close();
+            }
+            CopyToClipboard(c);
+            
+            /*const std::string fileName = "example.txt";
             std::ofstream outFile(fileName, std::ios::app);
 
             if (outFile) {
@@ -493,7 +658,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             }
             //DestroyWindow(hButton2);
 
-            /*hButton3 = CreateWindow(
+            hButton3 = CreateWindow(
                 "BUTTON",  // Predefined class; Unicode assumed 
                 "copy",      // Button text 
                 WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
@@ -507,13 +672,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 NULL);                   // Additional parameters*/
         }
 
-        if (LOWORD(wParam) == 3)
+        if (LOWORD(wParam) == 55)
         {
+            
             const std::string fileName = "example.txt";
             std::ifstream inFile(fileName);
 
             if (inFile) {
-                // File exists, read and print its contents
                 getline(inFile, line);
                 inFile.close();
             }
