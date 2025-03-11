@@ -10,5 +10,4 @@
 <hr>
 
 ## Concerns
-1. the data being stored in a map is RAM heavy and might be a bad idea for larger files. suggested alternatives: use database or indexing.
-2. security concerns. two possible ones are keyloggers and clipboard hijacking.
+1. security concerns. two possible ones are keyloggers and clipboard hijacking.
